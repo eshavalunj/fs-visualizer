@@ -3,10 +3,11 @@
   margin: 0 auto;
   padding: 24px;
   display: grid;
-  grid-template-columns: 350px 1fr;
+  grid-template-columns: 380px 1fr;
   grid-template-rows: auto 1fr;
   gap: 24px;
   height: 100vh;
+  box-sizing: border-box;
 }
 
 .app-header {
@@ -19,7 +20,7 @@
 }
 
 .app-header h1 {
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 700;
   letter-spacing: -0.5px;
 }
@@ -27,28 +28,32 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+  min-height: 0; /* Critical for grid scroll */
   overflow-y: auto;
-  padding-right: 8px; /* For scrollbar */
+  padding-right: 8px;
 }
 
 .main-content {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  overflow: hidden; /* Contains the disk grid normally */
+  min-height: 0; /* Critical for grid scroll */
+  overflow: hidden;
 }
 
 /* Disk Visualizer overrides */
 .disk-container {
-  flex-grow: 1;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   overflow: hidden;
 }
 
 .log-container {
-  height: 200px;
+  height: 180px;
+  flex-shrink: 0;
   overflow-y: auto;
   font-family: var(--font-mono);
   font-size: 0.85rem;

@@ -1,26 +1,51 @@
 /**
- * Finds contiguous free blocks.
+ * Finds contiguous free blocks based on the strategy.
  * @param {Array} blocks 
  * @param {Number} size 
+ * @param {String} policy - 'First Fit', 'Best Fit', or 'Worst Fit'
  * @returns {Array|null} Array of block IDs, or null if not enough contiguous space
  */
-export const allocateContiguous = (blocks, size) => {
-  let consecutiveCount = 0;
-  let startIndex = -1;
+export const allocateContiguous = (blocks, size, policy = 'First Fit') => {
+  const freeHoles = [];
+  let currentHole = null;
 
+  // Identify all free holes
   for (let i = 0; i < blocks.length; i++) {
     if (blocks[i].isFree) {
-      if (consecutiveCount === 0) startIndex = i;
-      consecutiveCount++;
-
-      if (consecutiveCount === size) {
-        return Array.from({ length: size }, (_, k) => blocks[startIndex + k].id);
+      if (currentHole === null) {
+        currentHole = { start: i, length: 1 };
+      } else {
+        currentHole.length++;
       }
     } else {
-      consecutiveCount = 0;
-      startIndex = -1;
+      if (currentHole !== null) {
+        if (currentHole.length >= size) {
+          freeHoles.push(currentHole);
+        }
+        currentHole = null;
+      }
     }
   }
+  if (currentHole !== null && currentHole.length >= size) {
+    freeHoles.push(currentHole);
+  }
+
+  if (freeHoles.length === 0) return null;
+
+  let selectedHole = null;
+
+  if (policy === 'First Fit') {
+    selectedHole = freeHoles[0];
+  } else if (policy === 'Best Fit') {
+    selectedHole = freeHoles.reduce((prev, curr) => (curr.length < prev.length ? curr : prev));
+  } else if (policy === 'Worst Fit') {
+    selectedHole = freeHoles.reduce((prev, curr) => (curr.length > prev.length ? curr : prev));
+  }
+
+  if (selectedHole) {
+    return Array.from({ length: size }, (_, k) => blocks[selectedHole.start + k].id);
+  }
+
   return null;
 };
 

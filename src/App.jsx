@@ -14,6 +14,8 @@ function App() {
   const [blocks, setBlocks] = useState([]);
   const [files, setFiles] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [policy, setPolicy] = useState('First Fit');
+  const [fragmentation, setFragmentation] = useState({ internal: 0, external: 0 });
 
   // Initialize disk
   useEffect(() => {
@@ -34,7 +36,7 @@ function App() {
     setLogs(prev => [...prev, { time, type, message }]);
   };
 
-  const handleAddFile = (name, size, strategy) => {
+  const handleAddFile = (name, size, strategy, actualSizeKB = null) => {
     if (size > TOTAL_BLOCKS) {
       addLog('error', `ERR: Cannot allocate ${size} blocks. Max capacity is ${TOTAL_BLOCKS}.`);
       return;
@@ -49,7 +51,7 @@ function App() {
     let indexBlockId = null;
 
     if (strategy === 'Contiguous') {
-      allocationIds = allocateContiguous(blocks, size);
+      allocationIds = allocateContiguous(blocks, size, policy);
     } else if (strategy === 'Linked') {
       allocationIds = allocateLinked(blocks, size);
     } else if (strategy === 'Indexed') {
@@ -61,11 +63,21 @@ function App() {
     }
 
     if (!allocationIds) {
-      addLog('error', `ERR: Allocation failed for '${name}'. Not enough space using ${strategy} algorithm. External fragmentation likely.`);
+      const totalFree = blocks.filter(b => b.isFree).length;
+      const isExternalFrag = strategy === 'Contiguous' && totalFree >= size;
+      
+      if (isExternalFrag) {
+        addLog('error', `ERR: External Fragmentation! Found ${totalFree} free blocks, but no contiguous hole of size ${size}.`);
+      } else {
+        addLog('error', `ERR: Allocation failed for '${name}'. Not enough space using ${strategy} algorithm.`);
+      }
       return;
     }
 
     const fileId = `F${files.length + 1}`;
+    
+    // Simulate internal fragmentation (random 0-30% of one block for demonstration)
+    const internalFrag = Math.random() * 0.4; 
     
     setBlocks(prev => {
       const newBlocks = [...prev];
@@ -77,6 +89,7 @@ function App() {
             fileId,
             type: 'data',
             color,
+            internalFrag: i === allocationIds.length - 1 ? internalFrag : 0,
             next: strategy === 'Linked' && i < allocationIds.length - 1 ? allocationIds[i + 1] : null
           };
         });
@@ -87,15 +100,17 @@ function App() {
           fileId,
           type: 'index',
           color,
+          internalFrag: 0,
           next: null
         };
-        allocationIds.forEach(blockId => {
+        allocationIds.forEach((blockId, i) => {
           newBlocks[blockId] = {
             ...newBlocks[blockId],
             isFree: false,
             fileId,
             type: 'data',
             color,
+            internalFrag: i === allocationIds.length - 1 ? internalFrag : 0,
             next: null
           };
         });
@@ -109,11 +124,51 @@ function App() {
       size,
       strategy,
       color,
+      policy: strategy === 'Contiguous' ? policy : null,
+      internalFrag,
       blocksAllocated: strategy === 'Indexed' ? [...allocationIds, indexBlockId] : allocationIds
     };
 
     setFiles(prev => [newFile, ...prev]);
-    addLog('success', `Allocated '${name}' (${size} blk) via ${strategy}. Assigned blocks: ${allocationIds.slice(0, 3).join(',')}${allocationIds.length > 3 ? '...' : ''} ${strategy === 'Indexed' ? `[Idx: ${indexBlockId}]` : ''}`);
+    addLog('success', `Allocated '${name}' (${size} blk) via ${strategy}${strategy === 'Contiguous' ? ` (${policy})` : ''}.`);
+  };
+
+  const handleCompact = () => {
+    addLog('System', 'Initiating Disk Compaction to resolve external fragmentation...');
+    
+    // Simple compaction: move all occupied blocks to the front
+    const occupiedBlocks = blocks.filter(b => !b.isFree);
+    const newBlocks = Array.from({ length: TOTAL_BLOCKS }, (_, i) => {
+      if (i < occupiedBlocks.length) {
+        return { ...occupiedBlocks[i], id: i };
+      }
+      return {
+        id: i,
+        isFree: true,
+        fileId: null,
+        type: 'data',
+        next: null,
+        color: null,
+        internalFrag: 0
+      };
+    });
+
+    // Update file block references
+    const fileMap = {};
+    newBlocks.forEach(b => {
+      if (b.fileId) {
+        if (!fileMap[b.fileId]) fileMap[b.fileId] = [];
+        fileMap[b.fileId].push(b.id);
+      }
+    });
+
+    setFiles(prev => prev.map(f => ({
+      ...f,
+      blocksAllocated: fileMap[f.id] || []
+    })));
+
+    setBlocks(newBlocks);
+    addLog('success', `Compaction complete. Moved ${occupiedBlocks.length} blocks. External fragmentation eliminated.`);
   };
 
   const handleDeleteFile = (id) => {
@@ -155,7 +210,12 @@ function App() {
       </header>
       
       <aside className="sidebar" style={{ position: 'relative', zIndex: 10 }}>
-        <ControlPanel onAddFile={handleAddFile} />
+        <ControlPanel 
+          onAddFile={handleAddFile} 
+          policy={policy} 
+          setPolicy={setPolicy} 
+          handleCompact={handleCompact}
+        />
         <FileList files={files} onDeleteFile={handleDeleteFile} />
       </aside>
 
