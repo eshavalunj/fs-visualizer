@@ -1,41 +1,51 @@
+# <h1><b><i> Memory Allocator OS Visualizer </i><b> </h1>
+An interactive,colorful, high-performance web sandbox designed to demystify how operating systems manage data storage on a disk. This tool simulates file system allocation strategies in real-time, providing a visual bridge between abstract OS theory and hardware-level execution.
 
-File System Strategy Visualizer: Technology & Architecture Report
-This document outlines the languages, software frameworks, build tools, and technical concepts utilized to build the real-time Memory Allocator OS visualizer with the new dynamic neon wave background.
+---
 
-1. Programming Languages
-JavaScript (ES6+)
-Usage: Serves as the backbone of the entire application. It controls the interactive React DOM updates, manages the memory allocation algorithm simulation logic (Contiguous, Linked, Indexed strategies), and communicates with WebGL APIs.
-Key Features Leveraged: Array manipulation hooks (useState, useEffect), Destructuring, Promises, ES Modules (import/export).
-GLSL (OpenGL Shading Language)
-Usage: Handles the rendering of the dynamic, full-screen background effect (InteractiveWaveShader).
-Key Mechanics:
-A highly optimized Fragment Shader performs heavy mathematical operations calculating sin, cos, and sine-wave deformations across the screen space pixels on the GPU.
-Generates the fluid “neon-tube” vaporwave glow effect by calculating distance vectors vec2 and interpolating between electric hex colors (mix).
-CSS3
-Usage: Defines the visual layout and responsive grid styling for the HUD (Heads-Up Display) panels, control menus, and animated glowing buttons.
-Key Features Leveraged:
-CSS Variables (:root) for easy theme building.
-backdrop-filter: blur(24px) to achieve modern frosted glassmorphism overlays on the HUD which allows the Three.js GLSL waves to render behind beautifully.
-HTML5
-Usage: Provide the semantic entrypoint structure containing the <div id="root"></div> wrapper that React injects the application into.
-2. Core Frameworks & Libraries
-React 19
-Role: Front-end framework used to build reusable component architectures and map memory allocation system state directly into DOM visual elements.
-Implementation: The UI comprises dynamic layouts like abstract control panels (ControlPanel), reactive file lists (FileList), an actively rendering block-grid disk mapper (DiskVisualizer), and a real-time system logger (OperationLog).
-Three.js (v174+)
-Role: The 3D/WebGL rendering engine used to draw the abstract wave background.
-Implementation: Directly accesses WebGL context via an OrthographicCamera and PlaneGeometry. Binds internal JavaScript state variables (like active/upcoming reminders or dimming options) to the fragment shader globally via uniforms, allowing the high-speed background to shift colors precisely when user actions occur in the DOM.
-Vite (v8.0+)
-Role: Development server and bundler.
-Why it’s used: Provides lightning-fast Hot Module Replacement (HMR) for near-instant rendering during coding sessions, and highly optimized code bundling utilizing Rollup logic under-the-hood to create a lightweight deployment build.
-3. Architecture & Application Flow
-State Management: The top-level App component holds the master state array representing exactly $300$ uniform blocks in disk memory.
-Algorithm Processing: When "Allocate" is clicked, helper functions parse the mathematical simulation to scan for valid byte allocations matching rules for contiguous blocks, linked chains, or pointer-driven linked tables.
-Data Passing: Results are broadcast downwards to heavily optimized React sub-components over standard props.
-Visual Layering: Uses heavy DOM z-indexing stacking to detach layout positioning. A rigid, low z-index HTML5 hardware-accelerated canvas executes the Three.js shader, allowing all React memory-map controls to float over it dynamically.
-4. Deployment Prerequisites
-To prepare this stack for Github Pages static deployment:
+## Overview
+The **Memory Allocator OS Visualizer** transforms complex memory management concepts into a tangible experience. Users can "allocate" files to a virtual 300-block disk and witness how different algorithms—**Contiguous**, **Linked**, and **Indexed**—handle space, fragmentation, and retrieval.
 
-The Vite builder is configured to output the production index via npm run build.
-Static assets are bundled to dist/.
-Relative pathway linking is necessary within configuration arguments so Github sub-directory hosting can resolve assets.
+### Key Visual Metrics
+* **Disk Usage Percentage:** Real-time tracking of filled vs. empty capacity.
+* **Fragmentation Analysis:** Separate counters for **Internal Fragmentation** (wasted space within a block) and **External Fragmentation** (isolated free blocks that are too small for new files).
+* **Live Operation Logs:** A scrolling system console documenting every micro-decision made by the simulated kernel.
+
+---
+
+## Tech Stack
+
+### 1. Frontend & Logic
+* **React 19:** Orchestrates the reactive UI components (HUD panels, file directory, and the disk grid).
+* **JavaScript (ES6+):** The engine behind the allocation algorithms. It handles the mathematical logic for *First Fit* and *Worst Fit* contiguous searches, linked-list pointer chains, and indexed block mapping.
+* **Vite 8.0+:** Provides a lightning-fast development environment and optimized production builds.
+
+### 2. Visuals & Shaders
+* **Three.js & GLSL:** Power the full-screen interactive background. A custom fragment shader calculates sine-wave deformations and neon gradients directly on the GPU for a fluid, high-frame-rate "Vaporwave" aesthetic.
+* **CSS3 Glassmorphism:** Uses `backdrop-filter: blur()` and high-contrast neon borders to create a modern, "Heads-Up Display" (HUD) interface that floats over the WebGL canvas.
+
+---
+
+## 📂 Allocation Strategies Simulated
+
+| Strategy | Logic | Visual Representation |
+| :--- | :--- | :--- |
+| **Contiguous** | Stores files in a single, unbroken line of blocks. | Uses *First Fit* or *Worst Fit* to find holes. High risk of external fragmentation. |
+| **Linked** | Each block contains a pointer to the next block. | Scattered blocks connected via a logical chain; eliminates external fragmentation. |
+| **Indexed** | A dedicated index block stores all pointers to file data. | A central "Index Node" (marked `IDX`) directs traffic to data blocks across the grid. |
+
+---
+
+## 🔧 OS Maintenance Features
+The visualizer includes an **OS Maintenance** suite to demonstrate system optimization:
+* **Compact Memory:** A manual trigger that simulates disk defragmentation. It shifts all occupied blocks to the beginning of the disk, merging scattered free space into one large, usable pool to eliminate external fragmentation.
+
+---
+
+## 💻 Development & Deployment
+
+### Local Setup
+1. Clone the repository.
+2. Install dependencies:
+   ```bash
+   npm install
